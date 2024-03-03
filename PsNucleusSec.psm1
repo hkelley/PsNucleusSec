@@ -54,8 +54,15 @@ Function Get-NucleusSecFindings (
     do {
         # Use the findings/search endpoint
         $url = "{0}/projects/{1}/findings/search?start={2}&limit={3}" -f $ApiBaseUrl,$ProjectId,$index,$ApiLimit
-        if($findings = Invoke-RestMethod -Uri $url -Headers $headers -Body $bodyJson -Method Post) {
-            $output += $findings
+        $findings = Invoke-RestMethod -Uri $url -Headers $headers -Body $bodyJson -Method Post
+        foreach($finding in $findings) {
+                        
+            # HACK - API returns the justification_assigned_teams field as a string AND the JSON is formatted as if the instance could be assigned to multiple teams.
+            # From what I can see in the UI, there be only one assigned team per instance so I'm taking the liberty to consolidate here.  1) JSONify the text.  2) Promote the first item in value prop to be the content
+            $finding | Add-Member -NotePropertyName "justification_assigned_team" -NotePropertyValue (ConvertFrom-Json $finding.justification_assigned_teams)[0]
+            $finding.PSObject.Properties.Remove("justification_assigned_teams")
+            
+            $output += $finding
         }
 
     } while ($findings.Count -eq $ApiLimit  -and ($index += $ApiLimit))
@@ -89,8 +96,14 @@ Function Get-NucleusSecAssets (
             # Get 'em all
         }
 
-        if($assets = Invoke-RestMethod -Uri $url -Headers $headers -Method Get) {
-            $output += $assets
+        $assets = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+        foreach($asset in $assets) {
+
+            # HACK - API returns this redundantly-nested teams structure.  Simplify it here by promoting the object in "team_name" up a level
+            foreach($f in "owner_team","support_team") {
+                $asset."$f" = $asset."$f".team_name
+            }
+            $output += $asset
         }
 
     } while ($assets.Count -eq $ApiLimit -and ($index += $ApiLimit))
