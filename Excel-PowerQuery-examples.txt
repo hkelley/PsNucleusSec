@@ -1,0 +1,56 @@
+// nucleus_export_assets
+let
+    Source = Json.Document(File.Contents("C:\temp\nucleus_export_assets.json"))
+    , #"Converted to Table" = Table.FromList(Source, Splitter.SplitByNothing(), null, null, ExtraValues.Error)
+    , #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"asset_id", "asset_name", "ip_address", "asset_type", "asset_info", "finding_count_critical", "finding_count_high", "finding_count_medium", "finding_vulnerability_score", "asset_base_risk_score", "owner_team", "support_team"}, {"asset_id", "asset_name", "ip_address", "asset_type", "asset_info", "finding_count_critical", "finding_count_high", "finding_count_medium", "finding_vulnerability_score", "asset_base_risk_score", "owner_team", "support_team"})
+    , #"Changed Type" = Table.TransformColumnTypes(#"Expanded Column1",{{"finding_count_critical", Int64.Type}, {"finding_count_high", Int64.Type}, {"finding_count_medium", Int64.Type}, {"finding_vulnerability_score", Int64.Type}, {"asset_base_risk_score", Int64.Type}})
+    , #"Reordered Columns" = Table.ReorderColumns(#"Changed Type",{"asset_id", "asset_name", "ip_address", "asset_type", "owner_team", "support_team", "asset_info", "finding_count_critical", "finding_count_high", "finding_count_medium", "finding_vulnerability_score", "asset_base_risk_score"})
+    , #"Fixed Team Nulls" = Table.ReplaceValue(#"Reordered Columns"
+        ,""
+        , [team_id=null,team_name=null] 
+        , Replacer.ReplaceValue
+        , {"owner_team","support_team"}
+        )
+    , #"Expanded Owner Team" = Table.ExpandRecordColumn( #"Fixed Team Nulls"
+                , "owner_team"
+                , {"team_id","team_name"}
+                ,{"owner_team_id","owner_team_name"})
+    , #"Expanded Support Team" = Table.ExpandRecordColumn( #"Expanded Owner Team"
+              , "support_team"
+              , {"team_id","team_name"}
+              , {"support_team_id","support_team_name"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Expanded Support Team",{{"asset_id", Int64.Type}, {"owner_team_id", Int64.Type}, {"support_team_id", Int64.Type}})
+in
+    #"Changed Type1"
+
+// nucleus_export_instances
+let
+    Source = Json.Document(File.Contents("C:\temp\nucleus_export_instances.json")),
+    #"Converted to Table" = Table.FromList(Source, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Expanded Column1" = Table.ExpandRecordColumn(#"Converted to Table", "Column1", {"finding_id", "finding_number", "finding_name", "finding_severity", "finding_cve", "asset_id", "finding_discovered", "due_date", "cisa_vulnerability_name", "justification_assigned_team"}, {"finding_id", "finding_number", "finding_name", "finding_severity", "finding_cve", "asset_id", "finding_discovered", "due_date", "cisa_vulnerability_name", "justification_assigned_team"})
+    , #"Expanded Assigned Team" = Table.ExpandRecordColumn( #"Expanded Column1"
+                , "justification_assigned_team"
+                , {"team_id","team_name"}
+                ,{"assigned_team_id","assigned_team_name"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Assigned Team",{{"finding_discovered", type datetime}, {"due_date", type date}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Changed Type",{{"finding_discovered", type date}, {"assigned_team_id", Int64.Type}, {"asset_id", Int64.Type}, {"finding_id", Int64.Type}})
+in
+    #"Changed Type1"
+
+// consolidated
+let
+    Source = Table.NestedJoin(nucleus_export_assets, {"asset_id"}, nucleus_export_instances, {"asset_id"}, "nucleus_export_instances", JoinKind.LeftOuter),
+    #"Reordered Columns" = Table.ReorderColumns(Source,{"asset_id", "asset_name", "ip_address", "asset_type", "owner_team_id", "owner_team_name", "support_team_id", "support_team_name", "asset_info", "nucleus_export_instances", "finding_count_critical", "finding_count_high", "finding_count_medium", "finding_vulnerability_score", "asset_base_risk_score"}),
+    #"Expanded nucleus_export_instances" = Table.ExpandTableColumn(#"Reordered Columns", "nucleus_export_instances", {"finding_name", "finding_severity", "finding_cve", "finding_discovered", "due_date", "cisa_vulnerability_name", "assigned_team_id", "assigned_team_name"}, {"finding_name", "finding_severity", "finding_cve", "finding_discovered", "due_date", "cisa_vulnerability_name", "assigned_team_id", "assigned_team_name"}),
+    #"Added responsibility" = Table.AddColumn(#"Expanded nucleus_export_instances", "responsibility"
+        , each if [assigned_team_id] is null then null
+          else if [assigned_team_id] = [owner_team_id] then "app owner" 
+          else if [assigned_team_id] > 0 then "operations"
+          else null),
+    #"Added Custom" = Table.AddColumn(#"Added responsibility", "status"
+        , each if [due_date] is null then "no date"
+          else if [due_date] > Date.From(DateTimeZone.UtcNow()) then "current"
+          else "overdue")
+    ,#"Reordered Columns1" = Table.ReorderColumns(#"Added Custom",{"asset_id", "asset_name", "ip_address", "asset_type", "responsibility", "finding_severity", "status", "due_date", "finding_discovered", "owner_team_id", "owner_team_name", "support_team_id", "support_team_name", "asset_info", "finding_name", "finding_cve", "cisa_vulnerability_name", "assigned_team_id", "assigned_team_name", "finding_count_critical", "finding_count_high", "finding_count_medium", "finding_vulnerability_score", "asset_base_risk_score"})
+in
+    #"Reordered Columns1"
