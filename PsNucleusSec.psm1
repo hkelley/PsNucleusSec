@@ -152,10 +152,8 @@ Function Get-NucleusSecTeamNotableVulns (
         , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     )   {
 
-    $headers = Get-Headers -ApiKey $ApiKey
-
     # Verify this is a valid team name
-    if(-not ($team = Get-NucleusSecTeam @par -ProjectId $ProjectId -TeamName $TeamName)) {
+    if(-not ($team = Get-NucleusSecTeam -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -TeamName $TeamName)) {
         Write-Warning "Could not find team $TeamName in project $ProjectId"
         return
     }
@@ -163,7 +161,7 @@ Function Get-NucleusSecTeamNotableVulns (
     # process the finding severities
     $notable_findings = @()
     $notable_findings_keys = @()
-    $findings = Get-NucleusSecFindings -ApiKey $ApiKey -ApiBaseUrl $ApiBaseUrl -ProjectId $ProjectId -Severities $Severities -TeamName $team.team_name
+    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -TeamName $team.team_name
         
     foreach($finding in $findings | Sort-Object due_date) {
 
