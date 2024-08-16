@@ -47,22 +47,34 @@ Function Get-NucleusSecFindings (
         , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     ) {
 
+
+    # Verify this is a valid team name
+    $teams = @()
+    $teams += Get-NucleusSecTeam -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -TeamName $TeamName
+
     $headers = Get-Headers -ApiKey $ApiKey
 
     $body = [pscustomobject] @{}
     if($Asset) { $body | Add-Member -NotePropertyName asset_id -NotePropertyValue $Asset_id }
     if($Severities) { $body | Add-Member -NotePropertyName finding_severity -NotePropertyValue $Severities }
     if($ScanTypes) { $body | Add-Member -NotePropertyName scan_type -NotePropertyValue $ScanTypes }
-    if($TeamName) {
+    if($teams.Count -eq 1) {
+        # Team name provided has an exact match.  Use the ID
+        $body | Add-Member -NotePropertyName team -NotePropertyValue $teams.team_id
+    } elseif(-not [string]::IsNullOrWhiteSpace($TeamName)) {
+        # Team name provided was not an exact match, might be a wildcard.   Pass as-is.
+        Write-Warning "Could not find a matching team for `"$TeamName`".  Passing to Nucleus as a string filter."
         $body | Add-Member -NotePropertyName team -NotePropertyValue $TeamName 
+    } else {
+        # Don't set the team filter
     }
+
+    $output = @()
+    $index = 0 
 
     if($body.psobject.Properties.Count) {
         $bodyJson = ConvertTo-Json $body
     }
-
-    $index = 0 
-    $output = @()
 
     do {
         # Use the findings/search endpoint
@@ -150,16 +162,10 @@ Function Get-NucleusSecTeamNotableVulns (
         , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     )   {
 
-    # Verify this is a valid team name
-    if(-not ($team = Get-NucleusSecTeam -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -TeamName $TeamName)) {
-        Write-Warning "Could not find team $TeamName in project $ProjectId"
-        return
-    }
-
     # process the finding severities
     $notable_findings = @()
     $notable_findings_keys = @()
-    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -TeamName $team.team_name
+    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -TeamName $TeamName
         
     foreach($finding in $findings | Sort-Object due_date) {
 
@@ -189,7 +195,7 @@ Function Get-NucleusSecTeamNotableVulns (
             $notable_findings += $finding
     }
 
-    $notable_findings | Select-Object status_message,due_date,finding_discovered,finding_name,finding_severity,team_name
+    $notable_findings | Select-Object status_message,due_date,finding_discovered,finding_name,finding_severity,epss_score,team_name
 }
 
 
