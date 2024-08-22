@@ -44,6 +44,7 @@ Function Get-NucleusSecFindings (
 	    , [Parameter(Mandatory = $false)] [string] $TeamName
         , [Parameter(Mandatory = $false)] [string[]] $Severities
         , [Parameter(Mandatory = $false)] [string[]] $ScanTypes
+        , [Parameter(Mandatory = $false)] [string[]] $States = ("Active")
         , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     ) {
 
@@ -54,7 +55,10 @@ Function Get-NucleusSecFindings (
 
     $headers = Get-Headers -ApiKey $ApiKey
 
-    $body = [pscustomobject] @{}
+    $body = [pscustomobject] @{
+        justification_status = $States
+    }
+
     if($Asset) { $body | Add-Member -NotePropertyName asset_id -NotePropertyValue $Asset_id }
     if($Severities) { $body | Add-Member -NotePropertyName finding_severity -NotePropertyValue $Severities }
     if($ScanTypes) { $body | Add-Member -NotePropertyName scan_type -NotePropertyValue $ScanTypes }
