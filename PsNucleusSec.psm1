@@ -16,9 +16,9 @@ Function Get-TotalDaysFromNow ([Parameter(Mandatory = $true)] [datetime] $eventD
 #endregion
 
 Function Get-NucleusSecProject  (
-	      [Parameter(Mandatory = $true)] [string] $ApiKey
-        , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
-        , [Parameter(Mandatory = $true)] [string] $ProjectName
+	  [Parameter(Mandatory = $true)] [string] $ApiKey
+    , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
+    , [Parameter(Mandatory = $true)] [string] $ProjectName
     )  {
 
     $url = "{0}/projects" -f $ApiBaseUrl
@@ -37,15 +37,15 @@ Function Get-NucleusSecProject  (
 }
 
 Function Get-NucleusSecFindings (
-	      [Parameter(Mandatory = $true)] [string] $ApiKey
-        , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
-	    , [Parameter(Mandatory = $true)] [int] $ProjectId
-	    , [Parameter(Mandatory = $false)] [int] $AssetId
-	    , [Parameter(Mandatory = $false)] [string] $TeamName
-        , [Parameter(Mandatory = $false)] [string[]] $Severities
-        , [Parameter(Mandatory = $false)] [string[]] $ScanTypes
-        , [Parameter(Mandatory = $false)] [string[]] $States = ("Active")
-        , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
+	  [Parameter(Mandatory = $true)] [string] $ApiKey
+    , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
+    , [Parameter(Mandatory = $true)] [int] $ProjectId
+    , [Parameter(Mandatory = $false)] [int] $AssetId
+    , [Parameter(Mandatory = $false)] [string] $TeamName
+    , [Parameter(Mandatory = $false)] [string[]] $Severities
+    , [Parameter(Mandatory = $false)] [string[]] $ScanTypes
+    , [Parameter(Mandatory = $false)] [string[]] $States = ("Active")
+    , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     ) {
 
 
@@ -101,12 +101,12 @@ Function Get-NucleusSecFindings (
 
 
 Function Get-NucleusSecAssets (
-	      [Parameter(Mandatory = $true)] [string] $ApiKey
-        , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl
-	    , [Parameter(Mandatory = $true)] [int] $ProjectId
-        , [Parameter(Mandatory = $false)] [string] $AssetName
-        , [Parameter(Mandatory = $false)] [System.Net.IPAddress] $AssetIP
-        , [Parameter(Mandatory = $false)] [int] $ApiLimit = 5000
+	  [Parameter(Mandatory = $true)] [string] $ApiKey
+    , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl
+    , [Parameter(Mandatory = $true)] [int] $ProjectId
+    , [Parameter(Mandatory = $false)] [string] $AssetName
+    , [Parameter(Mandatory = $false)] [System.Net.IPAddress] $AssetIP
+    , [Parameter(Mandatory = $false)] [int] $ApiLimit = 5000
     ) {
 
     $headers = Get-Headers -ApiKey $ApiKey
@@ -141,10 +141,10 @@ Function Get-NucleusSecAssets (
 }
 
 Function Get-NucleusSecTeam (
-	      [Parameter(Mandatory = $true)] [string] $ApiKey
-        , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
-	    , [Parameter(Mandatory = $true)] [int] $ProjectId
-	    , [Parameter(Mandatory = $false)] [string] $TeamName
+      [Parameter(Mandatory = $true)] [string] $ApiKey
+    , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
+	, [Parameter(Mandatory = $true)] [int] $ProjectId
+	, [Parameter(Mandatory = $false)] [string] $TeamName
     ) {
 
     $headers = Get-Headers -ApiKey $ApiKey
@@ -157,13 +157,13 @@ Function Get-NucleusSecTeam (
 }
 
 Function Get-NucleusSecTeamNotableVulns (
-	      [Parameter(Mandatory = $true)] [string] $ApiKey
-        , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
-	    , [Parameter(Mandatory = $true)] [int] $ProjectId
-	    , [Parameter(Mandatory = $true)] [string] $TeamName
-        , [Parameter(Mandatory = $false)] [int] $TimeWindow = 7
-        , [Parameter(Mandatory = $false)] [string[]] $Severities = ("High", "Critical")
-        , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
+	  [Parameter(Mandatory = $true)] [string] $ApiKey
+    , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
+    , [Parameter(Mandatory = $true)] [int] $ProjectId
+    , [Parameter(Mandatory = $true)] [string] $TeamName
+    , [Parameter(Mandatory = $false)] [int] $TimeWindow = 7
+    , [Parameter(Mandatory = $false)] [string[]] $Severities = ("High", "Critical")
+    , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     )   {
 
     # process the finding severities
