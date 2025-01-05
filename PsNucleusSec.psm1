@@ -15,11 +15,13 @@ Function Get-TotalDaysFromNow ([Parameter(Mandatory = $true)] [datetime] $eventD
 }
 #endregion
 
-Function Get-NucleusSecProject  (
+Function Get-NucleusSecProject {
+
+    param (
 	  [Parameter(Mandatory = $true)] [string] $ApiKey
     , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl 
     , [Parameter(Mandatory = $true)] [string] $ProjectName
-    )  {
+    )
 
     $url = "{0}/projects" -f $ApiBaseUrl
     $headers = Get-Headers -ApiKey $ApiKey
@@ -79,11 +81,13 @@ Function Get-NucleusSecFindings (
     if($body.psobject.Properties.Count) {
         $bodyJson = ConvertTo-Json $body
     }
+    Write-Verbose "HTTP BODY:  $bodyJson"
 
     do {
         # Use the findings/search endpoint
         $url = "{0}/projects/{1}/findings/search?start={2}&limit={3}" -f $ApiBaseUrl,$ProjectId,$index,$ApiLimit
         $findings = Invoke-RestMethod -Uri $url -Headers $headers -Body $bodyJson -Method Post
+        Write-Verbose "HTTP RESPONSE: $($findings.Count) items"
         foreach($finding in $findings) {
                         
             # HACK - API returns the justification_assigned_teams field as a string AND the JSON is formatted as if the instance could be assigned to multiple teams.
@@ -98,7 +102,6 @@ Function Get-NucleusSecFindings (
 
     return $output
 }
-
 
 Function Get-NucleusSecAssets (
 	  [Parameter(Mandatory = $true)] [string] $ApiKey
@@ -139,6 +142,42 @@ Function Get-NucleusSecAssets (
 
     return $output
 }
+
+
+Function Get-NucleusSecTopRisks (
+	  [Parameter(Mandatory = $true)] [string] $ApiKey
+    , [Parameter(Mandatory = $true)] [System.Uri] $ApiBaseUrl
+    , [Parameter(Mandatory = $true)] [int] $ProjectId
+    , [Parameter(Mandatory = $false)] [int] $ApiLimit = 100
+    , [Parameter(Mandatory = $false)] [int] $TopN = $ApiLimit
+    ) {
+
+    $headers = Get-Headers -ApiKey $ApiKey
+
+    $index = 0 
+    $output = @()
+    $body = "{}" # Empty filter
+
+    do {
+        $url = "{0}/projects/{1}/findings/toprisk?start={2}&limit={3}" -f $ApiBaseUrl,$ProjectId,$index,$ApiLimit
+
+        $risks = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
+        $output += $risks
+<#
+        foreach($asset in $assets) {
+
+            # HACK - API returns this redundantly-nested teams structure.  Simplify it here by promoting the object in "team_name" up a level
+            foreach($f in "owner_team","support_team") {
+                $asset."$f" = $asset."$f".team_name
+            }
+            $output += $asset
+        }
+#>
+    } while ($risks.Count -eq $ApiLimit -and $output.Count -lt $TopN -and ($index += $ApiLimit))
+
+    return $output
+}
+
 
 Function Get-NucleusSecTeam (
       [Parameter(Mandatory = $true)] [string] $ApiKey
@@ -206,5 +245,6 @@ Function Get-NucleusSecTeamNotableVulns (
 Export-ModuleMember -Function Get-NucleusSecProject
 Export-ModuleMember -Function Get-NucleusSecAssets
 Export-ModuleMember -Function Get-NucleusSecFindings
+Export-ModuleMember -Function Get-NucleusSecTopRisks
 Export-ModuleMember -Function Get-NucleusSecTeam
 Export-ModuleMember -Function Get-NucleusSecTeamNotableVulns
