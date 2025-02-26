@@ -46,10 +46,10 @@ Function Get-NucleusSecFindings (
     , [Parameter(Mandatory = $false)] [string] $TeamName
     , [Parameter(Mandatory = $false)] [string[]] $Severities
     , [Parameter(Mandatory = $false)] [string[]] $ScanTypes
-    , [Parameter(Mandatory = $false)] [string[]] $States = ("Active")
+    , [Parameter(Mandatory = $false)] [string[]] $States  # any from  https://help.nucleussec.com/docs/en/finding-statuses
     , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
+    , [Parameter(Mandatory = $false)] [switch] $IncludeInactive
     ) {
-
 
     # Verify this is a valid team name
     $teams = @()
@@ -58,10 +58,13 @@ Function Get-NucleusSecFindings (
     $headers = Get-Headers -ApiKey $ApiKey
 
     $body = [pscustomobject] @{
-        justification_status = $States
     }
 
-    if($Asset) { $body | Add-Member -NotePropertyName asset_id -NotePropertyValue $Asset_id }
+    if(!$IncludeInactive) {
+        $body | Add-Member -NotePropertyName is_active -NotePropertyValue $true
+    }
+    if($States){ $body | Add-Member -NotePropertyName justification_status_name -NotePropertyValue $States  }
+    if($AssetId) { $body | Add-Member -NotePropertyName asset_id -NotePropertyValue $Asset_id }
     if($Severities) { $body | Add-Member -NotePropertyName finding_severity -NotePropertyValue $Severities }
     if($ScanTypes) { $body | Add-Member -NotePropertyName scan_type -NotePropertyValue $ScanTypes }
     if($teams.Count -eq 1) {
@@ -86,7 +89,7 @@ Function Get-NucleusSecFindings (
     do {
         # Use the findings/search endpoint
         $url = "{0}/projects/{1}/findings/search?start={2}&limit={3}" -f $ApiBaseUrl,$ProjectId,$index,$ApiLimit
-        $findings = Invoke-RestMethod -Uri $url -Headers $headers -Body $bodyJson -Method Post
+        $findings = Invoke-RestMethod -Method Post -Uri $url -Headers $headers -Body $bodyJson 
         Write-Verbose "HTTP RESPONSE: $($findings.Count) items"
         foreach($finding in $findings) {
                         
@@ -142,7 +145,6 @@ Function Get-NucleusSecAssets (
 
     return $output
 }
-
 
 Function Get-NucleusSecTopRisks (
 	  [Parameter(Mandatory = $true)] [string] $ApiKey
@@ -240,11 +242,3 @@ Function Get-NucleusSecTeamNotableVulns (
 
     $notable_findings | Select-Object status_message,due_date,finding_discovered,finding_name,finding_severity,epss_score,team_name
 }
-
-
-Export-ModuleMember -Function Get-NucleusSecProject
-Export-ModuleMember -Function Get-NucleusSecAssets
-Export-ModuleMember -Function Get-NucleusSecFindings
-Export-ModuleMember -Function Get-NucleusSecTopRisks
-Export-ModuleMember -Function Get-NucleusSecTeam
-Export-ModuleMember -Function Get-NucleusSecTeamNotableVulns
