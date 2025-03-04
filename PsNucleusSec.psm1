@@ -210,7 +210,7 @@ Function Get-NucleusSecTeamNotableVulns (
     # process the finding severities
     $notable_findings = @()
     $notable_findings_keys = @()
-    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -TeamName $TeamName
+    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -States ("Active") -TeamName $TeamName
         
     foreach($finding in $findings | Sort-Object due_date) {
 
@@ -240,5 +240,5 @@ Function Get-NucleusSecTeamNotableVulns (
             $notable_findings += $finding
     }
 
-    $notable_findings | Select-Object status_message,due_date,finding_discovered,finding_name,finding_severity,epss_score,team_name
+    $notable_findings | Select-Object status_message,finding_discovered,due_date,finding_name,finding_severity,team_name
 }
