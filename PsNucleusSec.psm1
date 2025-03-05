@@ -165,16 +165,7 @@ Function Get-NucleusSecTopRisks (
 
         $risks = Invoke-RestMethod -Uri $url -Headers $headers -Method Post -Body $body
         $output += $risks
-<#
-        foreach($asset in $assets) {
 
-            # HACK - API returns this redundantly-nested teams structure.  Simplify it here by promoting the object in "team_name" up a level
-            foreach($f in "owner_team","support_team") {
-                $asset."$f" = $asset."$f".team_name
-            }
-            $output += $asset
-        }
-#>
     } while ($risks.Count -eq $ApiLimit -and $output.Count -lt $TopN -and ($index += $ApiLimit))
 
     return $output
@@ -204,13 +195,14 @@ Function Get-NucleusSecTeamNotableVulns (
     , [Parameter(Mandatory = $true)] [string] $TeamName
     , [Parameter(Mandatory = $false)] [int] $TimeWindow = 7
     , [Parameter(Mandatory = $false)] [string[]] $Severities = ("High", "Critical")
+    , [Parameter(Mandatory = $false)] [string[]] $States = ("Active")
     , [Parameter(Mandatory = $false)] [int] $ApiLimit = 1000
     )   {
 
     # process the finding severities
     $notable_findings = @()
     $notable_findings_keys = @()
-    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -States ("Active") -TeamName $TeamName
+    $findings = Get-NucleusSecFindings -ApiBaseUrl $ApiBaseUrl -ApiKey $ApiKey -ProjectId $ProjectId -Severities $Severities -States $States -TeamName $TeamName
         
     foreach($finding in $findings | Sort-Object due_date) {
 
